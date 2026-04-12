@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PronounceAI — Coach de Inglés</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0d0d14;
+  --surface: #13131e;
+  --surface2: #1a1a28;
+  --border: #252538;
+  --accent: #6c63ff;
+  --accent2: #ff9f43;
+  --accent3: #48dbaa;
+  --text: #e8e8f2;
+  --muted: #6868a0;
+  --danger: #ff6b8a;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--bg); color:var(--text); min-height:100vh; }
+.app { max-width:860px; margin:0 auto; padding:20px 14px 80px; }
+
+header { text-align:center; padding:24px 0 20px; border-bottom:1px solid var(--border); margin-bottom:20px; }
+.logo { font-family:'Playfair Display',serif; font-size:2rem; font-weight:900; background:linear-gradient(135deg,var(--accent),var(--accent2)); -webkit-background-clip:text; -webkit-text-fill-color:transparent; }
+.tagline { color:var(--muted); font-size:0.75rem; font-family:'DM Mono',monospace; letter-spacing:2px; text-transform:uppercase; margin-top:4px; }
+
+.tabs { display:flex; gap:4px; background:var(--surface); border-radius:12px; padding:5px; margin-bottom:18px; border:1px solid var(--border); overflow-x:auto; scrollbar-width:none; }
+.tabs::-webkit-scrollbar { display:none; }
+.tab { flex:1; min-width:fit-content; padding:9px 11px; border-radius:8px; border:none; background:transparent; color:var(--muted); font-family:'DM Sans',sans-serif; font-size:0.75rem; font-weight:500; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.tab.active { background:var(--accent); color:white; box-shadow:0 3px 12px rgba(108,99,255,0.4); }
+.tab:hover:not(.active) { color:var(--text); background:var(--surface2); }
+
+.panel { display:none; animation:fadeIn 0.3s ease; }
+.panel.active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+.card { background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:18px; margin-bottom:14px; }
+.card-title { font-family:'Playfair Display',serif; font-size:1rem; font-weight:700; margin-bottom:12px; }
+
+.topic-bar { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:16px; }
+.chip { padding:5px 12px; border-radius:999px; border:1px solid var(--border); background:var(--surface2); color:var(--muted); font-size:0.72rem; font-weight:500; cursor:pointer; transition:all 0.18s; }
+.chip.active { border-color:var(--accent); background:rgba(108,99,255,0.15); color:var(--accent); }
+
+.phrase-box { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:18px; margin-bottom:14px; }
+.phrase-en { font-family:'Playfair Display',serif; font-size:1.25rem; line-height:1.4; color:var(--text); margin-bottom:10px; }
+.phrase-ipa { font-family:'DM Mono',monospace; font-size:0.82rem; color:var(--accent); margin-bottom:4px; }
+.phrase-esp { font-family:'DM Mono',monospace; font-size:0.82rem; color:var(--accent2); margin-bottom:8px; }
+.phrase-es { font-size:0.8rem; color:var(--muted); font-style:italic; margin-bottom:10px; }
+.phrase-context { padding:10px; background:rgba(72,219,170,0.07); border-left:3px solid var(--accent3); border-radius:0 8px 8px 0; font-size:0.8rem; color:var(--text); line-height:1.5; margin-bottom:8px; }
+.phrase-tip { padding:10px; background:rgba(108,99,255,0.08); border-left:3px solid var(--accent); border-radius:0 8px 8px 0; font-size:0.8rem; color:var(--text); line-height:1.5; }
+.mini-label { font-family:'DM Mono',monospace; font-size:0.65rem; text-transform:uppercase; letter-spacing:1px; display:block; margin-bottom:3px; }
+.mini-label.ipa { color:var(--accent); }
+.mini-label.esp { color:var(--accent2); }
+.mini-label.ctx { color:var(--accent3); }
+.mini-label.tip { color:var(--accent); }
+
+.btn { display:inline-flex; align-items:center; gap:6px; padding:10px 16px; border-radius:10px; border:none; font-family:'DM Sans',sans-serif; font-size:0.85rem; font-weight:500; cursor:pointer; transition:all 0.2s; }
+.btn-primary { background:var(--accent); color:white; box-shadow:0 3px 12px rgba(108,99,255,0.3); }
+.btn-primary:active { transform:scale(0.97); }
+.btn-secondary { background:var(--surface2); color:var(--text); border:1px solid var(--border); }
+.btn-sm { padding:7px 12px; font-size:0.76rem; border-radius:8px; }
+.btn-row { display:flex; gap:8px; flex-wrap:wrap; align-items:center; margin-top:12px; justify-content:center; }
+
+.mic-btn { width:64px; height:64px; border-radius:50%; border:none; background:var(--accent); color:white; font-size:1.6rem; cursor:pointer; display:flex; align-items:center; justify-content:center; margin:0 auto; box-shadow:0 5px 20px rgba(108,99,255,0.4); transition:all 0.2s; }
+.mic-btn.recording { background:var(--danger); animation:pulse 1s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.07)} }
+
+.speak-center { display:flex; flex-direction:column; align-items:center; gap:12px; padding:6px 0; }
+.speak-status { font-family:'DM Mono',monospace; font-size:0.75rem; color:var(--muted); }
+.transcript-box { width:100%; min-height:44px; background:var(--surface2); border:1px solid var(--border); border-radius:9px; padding:10px 12px; font-size:0.85rem; color:var(--text); font-style:italic; line-height:1.5; }
+
+.input-group { margin-bottom:12px; }
+.input-group label { display:block; font-size:0.7rem; font-family:'DM Mono',monospace; text-transform:uppercase; letter-spacing:1px; color:var(--muted); margin-bottom:6px; }
+textarea, input[type="text"] { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:9px; padding:11px 13px; color:var(--text); font-family:'DM Sans',sans-serif; font-size:0.86rem; resize:vertical; transition:border-color 0.2s; line-height:1.5; }
+textarea:focus, input[type="text"]:focus { outline:none; border-color:var(--accent); }
+
+.ai-box { background:linear-gradient(135deg,rgba(108,99,255,0.07),rgba(72,219,170,0.04)); border:1px solid rgba(108,99,255,0.25); border-radius:13px; padding:16px; margin-top:14px; display:none; }
+.ai-box.visible { display:block; animation:fadeIn 0.4s ease; }
+.ai-header { display:flex; align-items:center; gap:7px; margin-bottom:10px; }
+.ai-dot { width:24px; height:24px; border-radius:50%; background:linear-gradient(135deg,var(--accent),var(--accent2)); display:flex; align-items:center; justify-content:center; font-size:0.7rem; }
+.ai-name { font-size:0.7rem; font-family:'DM Mono',monospace; color:var(--accent); text-transform:uppercase; letter-spacing:1px; }
+.ai-body { font-size:0.85rem; line-height:1.7; color:var(--text); }
+.ai-section { margin-bottom:10px; padding-bottom:10px; border-bottom:1px solid var(--border); }
+.ai-section:last-child { border-bottom:none; margin-bottom:0; padding-bottom:0; }
+.ai-section-label { font-family:'DM Mono',monospace; font-size:0.65rem; text-transform:uppercase; letter-spacing:1.5px; color:var(--accent2); margin-bottom:5px; }
+
+.loading { display:flex; gap:5px; align-items:center; justify-content:center; padding:14px; }
+.dot { width:6px; height:6px; border-radius:50%; background:var(--accent); animation:bounce 0.8s ease infinite; }
+.dot:nth-child(2) { animation-delay:0.15s; background:var(--accent2); }
+.dot:nth-child(3) { animation-delay:0.3s; background:var(--accent3); }
+@keyframes bounce { 0%,100%{transform:translateY(0);opacity:0.5} 50%{transform:translateY(-5px);opacity:1} }
+
+.notif { position:fixed; bottom:20px; left:50%; transform:translateX(-50%) translateY(80px); background:var(--surface2); border:1px solid var(--border); border-radius:11px; padding:11px 18px; font-size:0.82rem; color:var(--text); box-shadow:0 6px 28px rgba(0,0,0,0.5); transition:transform 0.3s ease; z-index:100; max-width:300px; text-align:center; }
+.notif.show { transform:translateX(-50%) translateY(0); }
+
+.topic-item { display:flex; align-items:center; justify-content:space-between; padding:11px 14px; background:var(--surface2); border-radius:9px; border:1px solid var(--border); gap:10px; margin-bottom:8px; }
+.topic-item-name { font-size:0.84rem; font-weight:500; flex:1; }
+.topic-item-count { font-family:'DM Mono',monospace; font-size:0.68rem; color:var(--muted); background:var(--surface); padding:2px 7px; border-radius:999px; }
+
+.ipa-guide { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.ipa-card { background:var(--surface2); border:1px solid var(--border); border-radius:9px; padding:10px; }
+.ipa-symbol { font-family:'DM Mono',monospace; font-size:1.2rem; color:var(--accent); font-weight:500; }
+.ipa-like { font-size:0.78rem; color:var(--accent2); margin:2px 0; }
+.ipa-example { font-size:0.73rem; color:var(--muted); }
+</style>
+</head>
+<body>
+<div class="app">
+
+<header>
+  <div class="logo">PronounceAI</div>
+  <div class="tagline">Tu coach de inglés · Profesorado 42 Leopoldo Marechal</div>
+</header>
+
+<div class="tabs">
+  <button class="tab active" onclick="switchTab('practice',this)">🎯 Practicar</button>
+  <button class="tab" onclick="switchTab('type',this)">✍️ Analizar</button>
+  <button class="tab" onclick="switchTab('spelling',this)">🔤 Spelling</button>
+  <button class="tab" onclick="switchTab('ipa',this)">📖 Guía IPA</button>
+  <button class="tab" onclick="switchTab('addtopic',this)">➕ Agregar</button>
+</div>
+
+<!-- PRACTICAR -->
+<div id="panel-practice" class="panel active">
+  <div class="topic-bar" id="topic-bar"></div>
+
+  <div class="phrase-box" id="phrase-box">
+    <div class="phrase-en" id="p-en">Elegí un tema arriba y tocá "Nueva frase" ↓</div>
+    <div id="p-ipa-wrap" style="display:none">
+      <span class="mini-label ipa">🔤 IPA (fonética oficial)</span>
+      <div class="phrase-ipa" id="p-ipa"></div>
+    </div>
+    <div id="p-esp-wrap" style="display:none">
+      <span class="mini-label esp">🗣 Cómo suena en español</span>
+      <div class="phrase-esp" id="p-esp"></div>
+    </div>
+    <div id="p-es-wrap" style="display:none">
+      <div class="phrase-es" id="p-es"></div>
+    </div>
+    <div id="p-ctx-wrap" style="display:none" class="phrase-context">
+      <span class="mini-label ctx">📚 Contexto / explicación</span>
+      <span id="p-ctx"></span>
+    </div>
+    <div id="p-tip-wrap" style="display:none" class="phrase-tip">
+      <span class="mini-label tip">💡 Tip de pronunciación</span>
+      <span id="p-tip"></span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">🎙 Practicá en voz alta</div>
+    <div class="speak-center">
+      <button class="mic-btn" id="mic-btn" onclick="toggleMic()">🎤</button>
+      <div class="speak-status" id="mic-status">Presioná para hablar</div>
+      <div class="transcript-box" id="transcript" style="display:none"></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-secondary btn-sm" onclick="speakIt()">🔊 Escuchar</button>
+      <button class="btn btn-primary btn-sm" onclick="nextPhrase()">Nueva frase →</button>
+    </div>
+  </div>
+
+  <div class="ai-box" id="practice-ai">
+    <div class="ai-header"><div class="ai-dot">✦</div><span class="ai-name">Feedback del coach</span></div>
+    <div class="ai-body" id="practice-ai-body"></div>
+  </div>
+</div>
+
+<!-- ANALIZAR -->
+<div id="panel-type" class="panel">
+  <div class="card">
+    <div class="card-title">✍️ Escribí una frase para analizar</div>
+    <div class="input-group">
+      <label>Tu frase o palabra en inglés</label>
+      <textarea id="type-input" rows="3" placeholder="Ej: The United Kingdom is composed of four countries..."></textarea>
+    </div>
+    <div class="input-group">
+      <label>¿Qué querés trabajar? (opcional)</label>
+      <input type="text" id="type-focus" placeholder="Ej: stress, vocales, letras mudas, pronunciación natural...">
+    </div>
+    <button class="btn btn-primary" onclick="analyzePhrase()">✦ Analizar</button>
+  </div>
+  <div class="ai-box" id="type-ai">
+    <div class="ai-header"><div class="ai-dot">✦</div><span class="ai-name">Análisis completo</span></div>
+    <div class="ai-body" id="type-ai-body"></div>
+  </div>
+</div>
+
+<!-- SPELLING -->
+<div id="panel-spelling" class="panel">
+  <div class="card">
+por cuatro países.", ctx:"El UK incluye: England (Inglaterra), Scotland (Escocia), Wales (Gales) y Northern Ireland (Irlanda del Norte). ¡Gran Bretaña NO es lo mismo que el UK — Gran Bretaña es solo 3 de esos 4 países, sin Irlanda del Norte!", tip:"'Composed' → stress en la 2da sílaba: com-POZD. La D final suena suave." },
+    { en:"Great Britain is composed of three countries: England, Scotland and Wales.", ipa:"/ɡreɪt ˈbrɪt.ən ɪz kəmˈpəʊzd əv θriː ˈkʌntrɪz/", esp:"greit BRI-ten iz com-POZD ov ZREE KAN-tris", es:"Gran Bretaña está compuesta por tres países: Inglaterra, Escocia y Gales.", ctx:"Gran Bretaña = la isla grande. El UK = Gran Bretaña + Irlanda del Norte. Las Islas Británicas = todo: UK + República de Irlanda + islas pequeñas.", tip:"'Britain' → BRI-ten, no 'Britein'. La 'a' final es un schwa /ə/, sonido neutro." },
+    { en:"The British Isles is a group of islands in northwestern Europe.", ipa:"/ðə ˌbrɪt.ɪʃ ˈaɪlz ɪz ə ɡruːp əv ˈaɪləndz/", esp:"de BRI-tish AILS iz a grup ov AI-lends", es:"Las Islas Británicas son un grupo de islas en el noroeste de Europa.", ctx:"'British Isles' es el término geográfico más amplio. Incluye más de 6000 islas pequeñas además del UK e Irlanda.", tip:"'Islands' → AI-lends. La S no se pronuncia: ¡es una trampa clásica! Nunca digas 'is-LANDS'." },
+    { en:"The capital of England is London.", ipa:"/ðə ˈkæp.ɪ.t əl əv ˈɪŋ.ɡlənd ɪz ˈlʌn.dən/", esp:"de KA-pi-tal ov ING-glend iz LAN-den", es:"La capital de Inglaterra es Londres.", ctx:"Londres es también la capital del Reino Unido. Es una de las ciudades más grandes de Europa con más de 9 millones de habitantes.", tip:"'London' → LAN-den, no 'Lon-DON'. Stress en la primera sílaba siempre." },
+    { en:"The capital of Scotland is Edinburgh.", ipa:"/ðə ˈkæp.ɪ.t əl əv ˈskɒt.lənd ɪz ˈed.ɪn.b(ə)rə/", esp:"de KA-pi-tal ov SCOT-lend iz E-din-bra", es:"La capital de Escocia es Edimburgo.", ctx:"Escocia está en el norte de la isla de Gran Bretaña. Tiene su propio parlamento desde 1999 pero sigue siendo parte del UK.", tip:"'Edinburgh' → E-din-bra. ¡Casi no se pronuncia el 'burgh'! Es una de las palabras más difíciles para hispanohablantes." },
+    { en:"The capital of Wales is Cardiff.", ipa:"/ðə ˈkæp.ɪ.t əl əv weɪlz ɪz ˈkɑː.dɪf/", esp:"de KA-pi-tal ov WEILS iz KAR-dif", es:"La capital de Gales es Cardiff.", ctx:"Gales está al oeste de Inglaterra. Tiene su propio idioma, el galés (Welsh), que todavía hablan más de 600.000 personas.", tip:"'Wales' → WEILS, rima con 'ails'. 'Cardiff' → KAR-dif, stress en la primera sílaba." },
+    { en:"The Atlantic Ocean surrounds the British Isles to the west.", ipa:"/ðə ətˈlæn.tɪk ˈəʊ.ʃən səˈraʊndz/", esp:"de at-LAN-tik O-shen sa-RAUNDS", es:"El Océano Atlántico rodea las Islas Británicas por el oeste.", ctx:"El Atlántico Norte separa las Islas Britá
